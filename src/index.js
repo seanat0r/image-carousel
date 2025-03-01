@@ -24,18 +24,25 @@ class Carousel {
 		this.rightPicture = rPicture;
 	}
 	#dotContainer = null;
+	#sequence = [];
+
+	#dotSequence() {
+		this.#sequence = [...this.pics];
+	}
 
 	#smallBtn() {
-		if (!this.#dotContainer) {
-			this.#dotContainer = document.createElement("div");
-			this.#dotContainer.id = "dotContainer";
-			this.pictureFrame.append(this.#dotContainer);
-		} else {
+		//checks if a dot-container exisiting
+		if (this.#dotContainer) {
 			this.#dotContainer.innerHTML = "";
 		}
 
-		for (let i = 0; i < this.pics.length; i++) {
-			console.log(i);
+		//create a new dot-container
+		this.#dotContainer = document.createElement("div");
+		this.#dotContainer.id = "dotContainer";
+		this.pictureFrame.append(this.#dotContainer);
+
+		//create the dots itself
+		for (let i = 0; i < this.#sequence.length; i++) {
 			const createDiv = document.createElement("div");
 
 			createDiv.className = "dot";
@@ -44,13 +51,71 @@ class Carousel {
 			this.#dotContainer.append(createDiv);
 		}
 	}
+	#getDotPicture(index) {
+		return this.#sequence[index];
+	}
+	dotArrayMove(dotPicture) {
+		const dotPicsIndex = this.pics.findIndex((element) => {
+			if (dotPicture === element) {
+				return true;
+			}
+		});
+		console.log("Index", dotPicsIndex);
+		const currentIndexPicture = this.pics.length - 1;
+		const stepsToRight =
+			(dotPicsIndex - currentIndexPicture + this.pics.length) %
+			this.pics.length;
+		console.log("HOW MANY STEPS TO RIGHT: ", stepsToRight);
+
+		for (let round = 0; round < stepsToRight; round++) {
+			console.log("IN THE FOR-LOOP")
+			this.#arrayMoveRight();
+		}
+		this.#pictureAreMoving();
+	}
+	dotUpdatetArray(dotPicture) {
+		const middlePicture = this.pics[this.pics.length - 1];
+		const leftPicture = this.pics[this.pics.length - 2];
+		const rightPicture = this.pics[0];
+
+		if (dotPicture === leftPicture) {
+			this.#arrayMoveRight();
+		} else if (dotPicture === rightPicture) {
+			this.#arrayMoveLeft();
+		} else if (dotPicture === middlePicture) {
+			return console.info("SAME PICTURE");
+		} else {
+			this.dotArrayMove(dotPicture);
+		}
+	}
+	#colorDot(dot, index) {
+		//Color reset
+		for(let dotNumber = 0; dotNumber < this.#sequence.length; dotNumber++){
+			let dot = document.querySelector(`#dot${dotNumber}`);
+			dot.style.backgroundColor =    "rgba(0, 0, 0, 0.4)";
+		}
+		//aplay color
+		dot.style.backgroundColor = "rgba(0, 255, 0, 0.4)";
+	}
+	#dotClick() {
+		const dotClass = document.querySelectorAll(".dot");
+		dotClass.forEach((dot, index) => {
+			dot.addEventListener("click", () => {
+				console.info("Which dot?: ", dot, index);
+				const dotPicture = this.#getDotPicture(index);
+				this.dotUpdatetArray(dotPicture);
+
+				setTimeout(() => {
+					let newDot = document.querySelector(`#dot${index}`);
+					this.#colorDot(newDot, index);
+				}, 1);
+				
+			});
+		});
+	}
 	#previewPicture() {
-		console.log(this.pics);
 		const leftPosition = this.pics.length - 2;
 		const rightPosition = 0;
-
-		console.log(leftPosition, rightPosition);
-		console.log(this.pics);
 
 		const leftPositionPicture = this.pics[leftPosition];
 		const rightPositionPicture = this.pics[rightPosition];
@@ -59,22 +124,14 @@ class Carousel {
 		this.rightPicture.append(rightPositionPicture);
 	}
 	#arrayMoveLeft() {
-		console.info("before: ", this.pics);
-
 		const firstElement = this.pics.shift();
 		this.pics.push(firstElement);
-
-		console.info("after: ", this.pics);
 
 		this.#pictureAreMoving();
 	}
 	#arrayMoveRight() {
-		console.info("before: ", this.pics);
-
 		const lastElement = this.pics.pop();
 		this.pics.unshift(lastElement);
-
-		console.info("after: ", this.pics);
 
 		this.#pictureAreMoving();
 	}
@@ -94,37 +151,59 @@ class Carousel {
 		//* void
 		this.thumbnails.innerHTML = "";
 		this.thumbnails.append(this.pics[1]);
+
+		//* dots updated
+		this.#smallBtn();
+
+		//* dots eventListener
+		this.#dotClick()
+
+		//* Click on left/ Right Picture
+		this.#clickOnPreviewPicture();
 	}
-	//! DA WEITER MACHEN
-	//TODO: SEITE ERKENNEN UND RICHTIGE RICHTUNG BEWEGEN!
+
 	#checkElement(element) {
-		console.log("element", element);
-		if (element === this.rightPicture.children) {
-			console.log("clicked right side");
+		console.log(
+			"element",
+			element,
+			"and rightPicture: ",
+			this.rightPicture.children[0]
+		);
+		if (element.isSameNode(this.rightPicture.children[0])) {
 			return "right";
-		} else if (element === this.leftPicture.children) {
-			console.log("clicked left side");
+		} else if (element.isSameNode(this.leftPicture.children[0])) {
 			return "left";
 		} else {
 			console.error("No side detected");
 		}
 	}
+	changeMiddlePicture(side) {
+		if (side === "left") {
+			return this.pics[this.pics.length - 2];
+		} else if (side === "right") {
+			return this.pics[0];
+		} else {
+			console.error("Error: No Side detection!");
+		}
+	}
 	#eventHandelingClickOnPicture(element) {
 		const side = this.#checkElement(element);
+		const middlePicture = this.changeMiddlePicture(side);
+
 		let leftPictureChild = this.leftPicture.firstChild;
 		let rightPictureChild = this.rightPicture.firstChild;
 
-		console.log("got clicked");
-
-		const middlePicture = this.pics[this.pics.length - 2];
-
-		console.log(middlePicture, " , ", leftPictureChild);
-		console.log("sameElement: ", middlePicture, "pics", this.pics);
-
-		if (leftPictureChild.src === middlePicture.src) {
-			console.log("Im in: ", this.pics);
+		if (leftPictureChild.src === middlePicture.src && side === "left") {
+			console.info("Im in: ", this.pics, "& LEFT SIDE");
 
 			this.#arrayMoveRight();
+
+			this.#clickOnPreviewPicture();
+		}
+		if (rightPictureChild.src === middlePicture.src && side === "right") {
+			console.info("Im in: ", this.pics, "& RIGHT SIDE");
+
+			this.#arrayMoveLeft();
 
 			this.#clickOnPreviewPicture();
 		}
@@ -133,12 +212,10 @@ class Carousel {
 		let leftPictureChild = this.leftPicture.firstChild;
 		let rightPictureChild = this.rightPicture.firstChild;
 
-		console.log(leftPictureChild, rightPictureChild);
-
 		if (!leftPictureChild && !rightPictureChild) {
 			return console.info("Preview doesnt have any picture!");
 		}
-		console.info("before any manipulation, pic: ", this.pics);
+
 		leftPictureChild.replaceWith(leftPictureChild.cloneNode(true));
 		leftPictureChild = this.leftPicture.firstChild;
 		leftPictureChild.addEventListener("click", (event) => {
@@ -151,10 +228,18 @@ class Carousel {
 			this.#eventHandelingClickOnPicture(event.target);
 		});
 	}
+	#changePicture() {
+		setInterval(() => {
+			this.#arrayMoveLeft();
+		}, 5000);
+	}
 	build() {
+		this.#dotSequence();
 		this.#smallBtn();
+		this.#dotClick();
 		this.#previewPicture();
 		this.#clickOnPreviewPicture();
+		this.#changePicture();
 	}
 }
 
